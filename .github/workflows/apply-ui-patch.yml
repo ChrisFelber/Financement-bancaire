@@ -1,0 +1,49 @@
+name: Apply UI patch
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/apply-ui-patch.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply requested UI changes
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('index.html')
+          text = p.read_text()
+
+          text = text.replace(".head h2{margin:0;font-size:16px}", ".head h2{margin:0;font-size:16px;color:#000}")
+          text = text.replace(".spothead h2{margin:8px 0 0;font-size:20px}", ".spothead h2{margin:8px 0 0;font-size:20px;color:#000}")
+          text = text.replace(".slideHeader h3{margin:0;font-size:16px}", ".slideHeader h3{margin:0;font-size:16px;color:#000}")
+          text = text.replace(".cardToggle .meta h2{margin:0;font-size:16px}", ".cardToggle .meta h2{margin:0;font-size:16px;color:#000}")
+          text = text.replace(".head h2{font-size:15px}", ".head h2{font-size:15px;color:#000}")
+          text = text.replace(".spothead h2{font-size:17px}", ".spothead h2{font-size:17px;color:#000}")
+          text = text.replace(".slideHeader h3{font-size:14px}", ".slideHeader h3{font-size:14px;color:#000}")
+          text = text.replace(".cardToggle .meta h2{font-size:14px}", ".cardToggle .meta h2{font-size:14px;color:#000}")
+
+          gap_line = "line(gapOK ? 'ok' : blank ? 'warn' : 'bad', blank ? 'Écart prix / valeur à vérifier si la valeur retenue est inférieure au prix.' : 'Écart prix / valeur couvert par des fonds propres hors 2e pilier.') +"
+          text = text.replace(gap_line, "")
+
+          p.write_text(text)
+          PY
+      - name: Commit changes
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          if git diff --cached --quiet; then
+            echo 'No changes to commit.'
+          else
+            git commit -m 'Simplifie les contrôles et uniformise les titres'
+            git push
+          fi
